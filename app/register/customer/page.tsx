@@ -1,0 +1,51 @@
+import Link from "next/link"
+import { redirect } from "next/navigation"
+
+import { RegisterForm } from "@/components/shared/RegisterForm"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { getSession } from "@/lib/auth"
+
+export default async function CustomerRegisterPage() {
+  const session = await getSession()
+  if (session?.user) redirect("/")
+
+  return (
+    <main className="flex min-h-svh items-center justify-center px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>顾客注册</CardTitle>
+          <CardDescription>免费注册,即刻发布维修需求</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RegisterForm role="customer" />
+          <div className="text-muted-foreground mt-6 text-sm">
+            <p>
+              已有账号?
+              <Link
+                href="/login"
+                className="ml-1 underline-offset-4 hover:underline"
+              >
+                去登录
+              </Link>
+            </p>
+            <p className="mt-1">
+              我是电工?
+              <Link
+                href="/register/electrician"
+                className="ml-1 underline-offset-4 hover:underline"
+              >
+                走电工入驻
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </main>
+  )
+}

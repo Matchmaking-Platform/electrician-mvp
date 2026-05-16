@@ -1,0 +1,284 @@
+// Electrician Matchmaking Platform — Prisma schema
+// 字段命名用 camelCase,枚举名 SCREAMING_SNAKE。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Role {
+  CUSTOMER
+  ELECTRICIAN
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  AWAITING_CONFIRMATION
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  UNPAID
+  HELD
+  RELEASED
+  REFUNDED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+// ============================================================
+// Models
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  phone        String?  @unique
+  role         Role
+  name         String
+  avatarUrl    String?
+  isBanned     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  electricianProfile ElectricianProfile?
+
+  customerOrders    Order[] @relation("CustomerOrders")
+  electricianOrders Order[] @relation("ElectricianOrders")
+
+  customerReviews    Review[] @relation("CustomerReviews")
+  electricianReviews Review[] @relation("ElectricianReviews")
+
+  sentMessages ChatMessage[] @relation("SenderMessages")
+
+  withdrawalRequests WithdrawalRequest[]
+
+  notifications Notification[]
+
+  auditLogs AuditLog[] @relation("AdminAuditLogs")
+
+  @@index([role])
+  @@index([isBanned])
+}
+
+model ElectricianProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  bio                String?
+  yearsExperience    Int                @default(0)
+  serviceAreas       Json               @default("[]") // string[] — 城市/区列表
+  certifications     Json               @default("[]") // string[] — 证书图片 URL
+  idCardFront        String?
+  idCardBack         String?
+  facePhoto          String?
+  verificationStatus VerificationStatus @default(PENDING)
+  rejectReason       String?
+  baseHourlyRate     Decimal            @default(0) @db.Decimal(10, 2)
+  isOnline           Boolean            @default(false)
+  lastActiveAt       DateTime?
+  totalOrders        Int                @default(0)
+  completedOrders    Int                @default(0)
+  avgRating          Float              @default(0)
+  ratingCount        Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  portfolioCases  PortfolioCase[]
+  priceItems      PriceItem[]
+
+  @@index([verificationStatus])
+  @@index([isOnline])
+  @@index([avgRating])
+}
+
+model PortfolioCase {
+  id            String   @id @default(cuid())
+  electricianId String
+  title         String
+  description   String?
+  images        Json     @default("[]") // string[] — 图片 URL
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  electrician ElectricianProfile @relation(fields: [electricianId], references: [id], onDelete: Cascade)
+
+  @@index([electricianId])
+}
+
+model PriceItem {
+  id            String   @id @default(cuid())
+  electricianId String
+  serviceType   String
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  unit          String // "小时" / "项" / "次" 等
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  electrician ElectricianProfile @relation(fields: [electricianId], references: [id], onDelete: Cascade)
+
+  @@index([electricianId])
+}
+
+model Order {
+  id                       String        @id @default(cuid())
+  customerId               String
+  electricianId            String?
+  serviceType              String
+  title                    String
+  description              String
+  images                   Json          @default("[]") // string[]
+  address                  String
+  latitude                 Float
+  longitude                Float
+  scheduledAt              DateTime?
+  estimatedPrice           Decimal?      @db.Decimal(10, 2)
+  finalPrice               Decimal?      @db.Decimal(10, 2)
+  status                   OrderStatus   @default(DRAFT)
+  paymentStatus            PaymentStatus @default(UNPAID)
+  stripePaymentIntentId    String?       @unique
+  platformCommissionRate   Decimal       @default(0) @db.Decimal(5, 4) // 例 0.1500
+  platformCommissionAmount Decimal?      @db.Decimal(10, 2)
+  electricianPayout        Decimal?      @db.Decimal(10, 2)
+  completionPhotos         Json          @default("[]") // string[]
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  acceptedAt               DateTime?
+  startedAt                DateTime?
+  completedAt              DateTime?
+  cancelledAt              DateTime?
+
+  customer    User          @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  electrician User?         @relation("ElectricianOrders", fields: [electricianId], references: [id], onDelete: Restrict)
+  messages    ChatMessage[]
+  review      Review?
+
+  @@index([customerId])
+  @@index([electricianId])
+  @@index([status, createdAt])
+  @@index([paymentStatus])
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  orderId     String
+  senderId    String
+  content     String
+  messageType MessageType @default(TEXT)
+  imageUrl    String?
+  readAt      DateTime?
+  createdAt   DateTime    @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender User  @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@index([senderId])
+}
+
+model Review {
+  id                    String   @id @default(cuid())
+  orderId               String   @unique
+  customerId            String
+  electricianId         String
+  rating                Int      // 1-5,总评
+  professionalismRating Int      // 专业度
+  punctualityRating     Int      // 守时
+  valueRating           Int      // 性价比
+  comment               String?
+  images                Json     @default("[]") // string[]
+  electricianReply      String?
+  repliedAt             DateTime?
+  isHidden              Boolean  @default(false)
+  hiddenReason          String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  order       Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer    User  @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Restrict)
+  electrician User  @relation("ElectricianReviews", fields: [electricianId], references: [id], onDelete: Restrict)
+
+  @@index([electricianId])
+  @@index([customerId])
+  @@index([rating])
+  @@index([isHidden])
+}
+
+model WithdrawalRequest {
+  id            String           @id @default(cuid())
+  electricianId String
+  amount        Decimal          @db.Decimal(10, 2)
+  status        WithdrawalStatus @default(PENDING)
+  bankInfo      Json             // { bankName, accountName, accountNumber, ... }
+  adminNote     String?
+  createdAt     DateTime         @default(now())
+  processedAt   DateTime?
+
+  electrician User @relation(fields: [electricianId], references: [id], onDelete: Restrict)
+
+  @@index([electricianId])
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 例 ORDER_ACCEPTED / NEW_MESSAGE / PAYMENT_RECEIVED / ...
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String   // 例 APPROVE_ELECTRICIAN / BAN_USER / RELEASE_PAYMENT
+  targetType String   // 例 USER / ORDER / REVIEW
+  targetId   String
+  detail     Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  admin User @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([adminId, createdAt])
+  @@index([targetType, targetId])
+}
