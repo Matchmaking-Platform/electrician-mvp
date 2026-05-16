@@ -84,10 +84,29 @@ export default async function ElectricianDashboard() {
         </CardContent>
       </Card>
 
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Link href="/electrician/orders/hall">
+          <Card className="hover:bg-muted/40 transition-colors">
+            <CardHeader>
+              <CardTitle>接单大厅</CardTitle>
+              <CardDescription>实时刷新匹配你服务区的新订单</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Link href="/electrician/orders">
+          <Card className="hover:bg-muted/40 transition-colors">
+            <CardHeader>
+              <CardTitle>我的订单</CardTitle>
+              <CardDescription>查看已接订单的进度</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
       <Card className="mt-4 opacity-60">
         <CardHeader>
-          <CardTitle>接单大厅 / 订单管理 / 收入提现</CardTitle>
-          <CardDescription>阶段 4+ 开放</CardDescription>
+          <CardTitle>收入与提现</CardTitle>
+          <CardDescription>阶段 6 上支付后开放</CardDescription>
         </CardHeader>
       </Card>
     </main>
