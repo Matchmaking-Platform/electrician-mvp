@@ -1,6 +1,8 @@
 import { VerificationStatus } from "@prisma/client"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -67,16 +69,26 @@ export default async function ElectricianDashboard() {
       </div>
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>占位</CardTitle>
+          <CardTitle>个人主页</CardTitle>
           <CardDescription>
-            接单大厅、订单管理、收入提现等功能在阶段 4+ 实现。
+            完善简介、案例、报价能显著提升被选率。
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
             当前参考时薪:¥{Number(profile.baseHourlyRate).toFixed(2)}/小时
           </p>
+          <Link href="/electrician/profile" className={buttonVariants()}>
+            管理资料
+          </Link>
         </CardContent>
+      </Card>
+
+      <Card className="mt-4 opacity-60">
+        <CardHeader>
+          <CardTitle>接单大厅 / 订单管理 / 收入提现</CardTitle>
+          <CardDescription>阶段 4+ 开放</CardDescription>
+        </CardHeader>
       </Card>
     </main>
   )

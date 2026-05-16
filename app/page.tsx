@@ -27,20 +27,29 @@ export default async function Home() {
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Link href="/login" className={buttonVariants({ size: "lg" })}>
+        <Link href="/electricians" className={buttonVariants({ size: "lg" })}>
+          先随便看看
+        </Link>
+        <Link
+          href="/login"
+          className={buttonVariants({ size: "lg", variant: "outline" })}
+        >
           登录
         </Link>
+      </div>
+      <div className="text-muted-foreground flex gap-4 text-sm">
         <Link
           href="/register/customer"
-          className={buttonVariants({ size: "lg", variant: "outline" })}
+          className="underline-offset-4 hover:underline"
         >
-          我是顾客,我要注册
+          顾客注册
         </Link>
+        <span>·</span>
         <Link
           href="/register/electrician"
-          className={buttonVariants({ size: "lg", variant: "outline" })}
+          className="underline-offset-4 hover:underline"
         >
-          我是电工,我要入驻
+          电工入驻
         </Link>
       </div>
     </main>
