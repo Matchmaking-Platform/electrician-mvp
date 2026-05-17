@@ -101,5 +101,5 @@ test("下单 → 抢单 → 双方看到 ACCEPTED 订单", async ({ page, contex
   await expect(page.getByText(orderTitle)).toBeVisible()
   await expect(page.getByText("已接单", { exact: true })).toBeVisible()
   await expect(page.getByText("已接单师傅")).toBeVisible()
-  await expect(page.getByText("陈师傅")).toBeVisible() // electrician1 = 陈师傅
+  await expect(page.getByText("陈师傅").first()).toBeVisible() // electrician1 = 陈师傅
 })

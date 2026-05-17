@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
 import { CancelOrderButton } from "@/components/customer/CancelOrderButton"
+import { ChatPanel } from "@/components/shared/ChatPanel"
 import { OrderInfo, type OrderInfoData } from "@/components/shared/OrderInfo"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -92,6 +93,16 @@ export default async function CustomerOrderDetailPage({
           <CancelOrderButton orderId={order.id} />
         ) : null}
       </div>
+
+      {order.electricianId ? (
+        <div className="mt-6">
+          <ChatPanel
+            orderId={order.id}
+            currentUserId={session.user.id}
+            counterpartName={order.electrician?.name ?? null}
+          />
+        </div>
+      ) : null}
     </main>
   )
 }

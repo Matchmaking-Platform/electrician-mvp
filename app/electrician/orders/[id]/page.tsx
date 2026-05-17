@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
+import { ChatPanel } from "@/components/shared/ChatPanel"
 import { OrderInfo, type OrderInfoData } from "@/components/shared/OrderInfo"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -88,6 +89,15 @@ export default async function ElectricianOrderDetailPage({
         ← 返回我的订单
       </Link>
       <OrderInfo order={data} />
+
+      <div className="mt-6">
+        <ChatPanel
+          orderId={order.id}
+          currentUserId={session.user.id}
+          counterpartName={order.customer?.name ?? null}
+        />
+      </div>
+
       <p className="text-muted-foreground mt-6 text-xs">
         下一阶段:开工、上传完工凭证、收款将在阶段 6 接通支付后开放。
       </p>
