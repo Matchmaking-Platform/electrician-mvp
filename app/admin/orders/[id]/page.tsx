@@ -1,27 +1,25 @@
 import Link from "next/link"
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 
-import { ElectricianOrderActions } from "@/components/electrician/ElectricianOrderActions"
-import { ChatPanel } from "@/components/shared/ChatPanel"
+import { ResolveDisputeActions } from "@/components/admin/ResolveDisputeActions"
 import { OrderInfo, type OrderInfoData } from "@/components/shared/OrderInfo"
-import { getSession } from "@/lib/auth"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { prisma } from "@/lib/prisma"
 
-// 状态会经过对方动作改变(顾客付款、申诉…),禁用任何缓存,每次都从 DB 读
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-export default async function ElectricianOrderDetailPage({
+export default async function AdminOrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const session = await getSession()
-  if (!session?.user || session.user.role !== "ELECTRICIAN") {
-    redirect("/login")
-  }
-
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
@@ -40,13 +38,14 @@ export default async function ElectricianOrderDetailPage({
           },
         },
       },
+      messages: {
+        orderBy: { createdAt: "asc" },
+        take: 50,
+        include: { sender: { select: { name: true } } },
+      },
     },
   })
   if (!order) notFound()
-  if (order.electricianId !== session.user.id) {
-    // 已被别人抢 / 不是我接的
-    redirect("/electrician/orders/hall")
-  }
 
   const data: OrderInfoData = {
     id: order.id,
@@ -86,33 +85,59 @@ export default async function ElectricianOrderDetailPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
+    <main className="mx-auto w-full max-w-4xl px-4 py-8">
       <Link
-        href="/electrician/orders"
+        href="/admin/disputes"
         className="text-muted-foreground hover:text-foreground mb-4 inline-block text-sm"
       >
-        ← 返回我的订单
+        ← 返回申诉列表
       </Link>
       <OrderInfo
         order={data}
         completionPhotos={(order.completionPhotos as string[]) ?? []}
       />
 
-      <div className="mt-6">
-        <ElectricianOrderActions
-          orderId={order.id}
-          status={order.status}
-          paymentStatus={order.paymentStatus}
-        />
-      </div>
+      {order.status === "DISPUTED" ? (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-base">裁决</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResolveDisputeActions orderId={order.id} />
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <div className="mt-6">
-        <ChatPanel
-          orderId={order.id}
-          currentUserId={session.user.id}
-          counterpartName={order.customer?.name ?? null}
-        />
-      </div>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">
+            聊天记录(最近 {order.messages.length} 条)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm">
+          {order.messages.length === 0 ? (
+            <p className="text-muted-foreground text-center">无消息</p>
+          ) : (
+            order.messages.map((m) => (
+              <div key={m.id} className="border-b pb-2 last:border-b-0">
+                <p className="text-muted-foreground text-xs">
+                  {m.sender.name} · {new Date(m.createdAt).toLocaleString("zh-CN")}
+                </p>
+                {m.messageType === "IMAGE" && m.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.imageUrl}
+                    alt=""
+                    className="mt-1 max-h-40 rounded-md"
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap">{m.content}</p>
+                )}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </main>
   )
 }

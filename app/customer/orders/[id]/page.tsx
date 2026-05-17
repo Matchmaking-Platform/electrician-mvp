@@ -1,11 +1,14 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
-import { CancelOrderButton } from "@/components/customer/CancelOrderButton"
+import { CustomerOrderActions } from "@/components/customer/CustomerOrderActions"
 import { ChatPanel } from "@/components/shared/ChatPanel"
 import { OrderInfo, type OrderInfoData } from "@/components/shared/OrderInfo"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export default async function CustomerOrderDetailPage({
   params,
@@ -86,12 +89,18 @@ export default async function CustomerOrderDetailPage({
       >
         ← 返回订单列表
       </Link>
-      <OrderInfo order={data} />
+      <OrderInfo
+        order={data}
+        completionPhotos={(order.completionPhotos as string[]) ?? []}
+      />
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {order.status === "PENDING" ? (
-          <CancelOrderButton orderId={order.id} />
-        ) : null}
+      <div className="mt-6">
+        <CustomerOrderActions
+          orderId={order.id}
+          status={order.status}
+          paymentStatus={order.paymentStatus}
+          estimatedPrice={data.estimatedPrice}
+        />
       </div>
 
       {order.electricianId ? (

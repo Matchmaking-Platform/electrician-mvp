@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { VerificationStatus } from "@prisma/client"
+import { OrderStatus, VerificationStatus } from "@prisma/client"
 
 import {
   Card,
@@ -17,6 +17,9 @@ export default async function AdminHome() {
     where: { verificationStatus: VerificationStatus.PENDING },
   })
   const totalElectricians = await prisma.electricianProfile.count()
+  const disputeCount = await prisma.order.count({
+    where: { status: OrderStatus.DISPUTED },
+  })
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
@@ -42,12 +45,19 @@ export default async function AdminHome() {
             </CardContent>
           </Card>
         </Link>
-        <Card className="opacity-50">
-          <CardHeader>
-            <CardTitle>订单、用户、提现</CardTitle>
-            <CardDescription>阶段 8 之后开放</CardDescription>
-          </CardHeader>
-        </Card>
+        <Link href="/admin/disputes">
+          <Card className="hover:bg-muted/40 transition-colors">
+            <CardHeader>
+              <CardTitle>申诉处理</CardTitle>
+              <CardDescription>{disputeCount} 单待裁决</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                查看争议订单 →
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </main>
   )

@@ -111,6 +111,10 @@ model ElectricianProfile {
   completedOrders    Int                @default(0)
   avgRating          Float              @default(0)
   ratingCount        Int                @default(0)
+  /** 可用余额(已结算、可申请提现) */
+  availableBalance   Decimal            @default(0) @db.Decimal(10, 2)
+  /** 累计赚取(含已提现) */
+  totalEarned        Decimal            @default(0) @db.Decimal(10, 2)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 

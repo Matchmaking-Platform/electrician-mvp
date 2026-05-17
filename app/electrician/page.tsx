@@ -103,12 +103,14 @@ export default async function ElectricianDashboard() {
         </Link>
       </div>
 
-      <Card className="mt-4 opacity-60">
-        <CardHeader>
-          <CardTitle>收入与提现</CardTitle>
-          <CardDescription>阶段 6 上支付后开放</CardDescription>
-        </CardHeader>
-      </Card>
+      <Link href="/electrician/wallet" className="mt-4 block">
+        <Card className="hover:bg-muted/40 transition-colors">
+          <CardHeader>
+            <CardTitle>钱包</CardTitle>
+            <CardDescription>查看余额、累计收入、最近结算</CardDescription>
+          </CardHeader>
+        </Card>
+      </Link>
     </main>
   )
 }

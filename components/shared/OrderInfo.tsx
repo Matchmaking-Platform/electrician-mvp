@@ -74,7 +74,13 @@ function Timeline({ order }: { order: OrderInfoData }) {
   )
 }
 
-export function OrderInfo({ order }: { order: OrderInfoData }) {
+export function OrderInfo({
+  order,
+  completionPhotos = [],
+}: {
+  order: OrderInfoData
+  completionPhotos?: string[]
+}) {
   return (
     <div className="grid gap-4">
       <Card>
@@ -142,6 +148,27 @@ export function OrderInfo({ order }: { order: OrderInfoData }) {
           <Timeline order={order} />
         </CardContent>
       </Card>
+
+      {completionPhotos.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">完工凭证</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {completionPhotos.map((u, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={u}
+                  alt={`完工 ${i + 1}`}
+                  className="aspect-square w-full rounded-md object-cover"
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {order.electrician ? (
         <Card>
