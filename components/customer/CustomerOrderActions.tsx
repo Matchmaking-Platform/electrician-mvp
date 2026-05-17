@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ReviewDialog } from "@/components/customer/ReviewDialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -29,22 +30,26 @@ export function CustomerOrderActions({
   status,
   paymentStatus,
   estimatedPrice,
+  hasReview,
 }: {
   orderId: string
   status: OrderStatus
   paymentStatus: PaymentStatus
   estimatedPrice: number | null
+  hasReview: boolean
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
   const [disputeOpen, setDisputeOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   const order = { status, paymentStatus }
   const showCancel = canCustomerCancel(order)
   const showPay = canPay(order)
   const showConfirm = canCustomerConfirm(order)
   const showDispute = canCustomerDispute(order)
+  const showReview = status === "COMPLETED" && !hasReview
 
   async function call(url: string, init?: RequestInit, success?: string) {
     setBusy(true)
@@ -69,7 +74,12 @@ export function CustomerOrderActions({
   }
   async function handleConfirm() {
     if (!confirm("确认师傅已完工?款项将立即划给师傅。")) return
-    await call(`/api/orders/${orderId}/confirm`, { method: "POST" }, "已确认完工")
+    const ok = await call(
+      `/api/orders/${orderId}/confirm`,
+      { method: "POST" },
+      "已确认完工,给师傅一个评价吧"
+    )
+    if (ok) setReviewOpen(true) // 自动弹评价框
   }
 
   return (
@@ -88,6 +98,11 @@ export function CustomerOrderActions({
         {showConfirm ? (
           <Button onClick={handleConfirm} disabled={busy}>
             确认完工
+          </Button>
+        ) : null}
+        {showReview ? (
+          <Button onClick={() => setReviewOpen(true)} disabled={busy}>
+            补评价
           </Button>
         ) : null}
         {showDispute ? (
@@ -113,6 +128,11 @@ export function CustomerOrderActions({
         onOpenChange={setDisputeOpen}
         orderId={orderId}
         onDone={() => router.refresh()}
+      />
+      <ReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        orderId={orderId}
       />
     </>
   )

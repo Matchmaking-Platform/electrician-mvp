@@ -3,6 +3,7 @@ import { Star } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { PublicReviewsTab } from "@/components/customer/PublicReviewsTab"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -230,9 +231,7 @@ export default async function ElectricianDetailPage({
           )}
         </TabsContent>
         <TabsContent value="reviews" className="mt-4">
-          <p className="text-muted-foreground py-6 text-center text-sm">
-            评价模块在阶段 7 开放
-          </p>
+          <PublicReviewsTab electricianProfileId={profile.id} />
         </TabsContent>
       </Tabs>
     </main>

@@ -20,6 +20,10 @@ export default async function AdminHome() {
   const disputeCount = await prisma.order.count({
     where: { status: OrderStatus.DISPUTED },
   })
+  const reviewCount = await prisma.review.count()
+  const hiddenReviewCount = await prisma.review.count({
+    where: { isHidden: true },
+  })
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
@@ -54,6 +58,21 @@ export default async function AdminHome() {
             <CardContent>
               <p className="text-muted-foreground text-sm">
                 查看争议订单 →
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/reviews">
+          <Card className="hover:bg-muted/40 transition-colors">
+            <CardHeader>
+              <CardTitle>评价审核</CardTitle>
+              <CardDescription>
+                共 {reviewCount} 条 / 已下架 {hiddenReviewCount}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                查看评价管理 →
               </p>
             </CardContent>
           </Card>

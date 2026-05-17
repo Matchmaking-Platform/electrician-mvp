@@ -23,6 +23,7 @@ export default async function CustomerOrderDetailPage({
     where: { id },
     include: {
       customer: { select: { id: true, name: true, email: true } },
+      review: { select: { id: true } },
       electrician: {
         select: {
           id: true,
@@ -100,6 +101,7 @@ export default async function CustomerOrderDetailPage({
           status={order.status}
           paymentStatus={order.paymentStatus}
           estimatedPrice={data.estimatedPrice}
+          hasReview={!!order.review}
         />
       </div>
 
