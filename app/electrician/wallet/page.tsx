@@ -2,6 +2,8 @@ import { OrderStatus, VerificationStatus } from "@prisma/client"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { WithdrawDialog } from "@/components/electrician/WithdrawDialog"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -12,6 +14,24 @@ import {
 import { getSession } from "@/lib/auth"
 import { timeAgo } from "@/lib/order-helpers"
 import { prisma } from "@/lib/prisma"
+
+export const dynamic = "force-dynamic"
+
+const WITHDRAWAL_LABEL: Record<string, string> = {
+  PENDING: "处理中",
+  APPROVED: "已审批",
+  PAID: "已打款",
+  REJECTED: "已驳回",
+}
+const WITHDRAWAL_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  PENDING: "default",
+  APPROVED: "secondary",
+  PAID: "secondary",
+  REJECTED: "destructive",
+}
 
 export default async function ElectricianWalletPage() {
   const session = await getSession()
@@ -30,23 +50,40 @@ export default async function ElectricianWalletPage() {
     redirect("/electrician/onboarding")
   }
 
-  const recent = await prisma.order.findMany({
-    where: {
-      electricianId: session.user.id,
-      status: OrderStatus.COMPLETED,
-      paymentStatus: "RELEASED",
-    },
-    orderBy: { completedAt: "desc" },
-    take: 20,
-    select: {
-      id: true,
-      title: true,
-      finalPrice: true,
-      platformCommissionAmount: true,
-      electricianPayout: true,
-      completedAt: true,
-    },
-  })
+  const [recent, withdrawals] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        electricianId: session.user.id,
+        status: OrderStatus.COMPLETED,
+        paymentStatus: "RELEASED",
+      },
+      orderBy: { completedAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        title: true,
+        finalPrice: true,
+        platformCommissionAmount: true,
+        electricianPayout: true,
+        completedAt: true,
+      },
+    }),
+    prisma.withdrawalRequest.findMany({
+      where: { electricianId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        adminNote: true,
+        createdAt: true,
+        processedAt: true,
+      },
+    }),
+  ])
+
+  const availableBalance = Number(profile.availableBalance)
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8">
@@ -57,13 +94,11 @@ export default async function ElectricianWalletPage() {
           <CardHeader>
             <CardDescription>可用余额</CardDescription>
             <CardTitle className="text-3xl">
-              ¥{Number(profile.availableBalance).toFixed(2)}
+              ¥{availableBalance.toFixed(2)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-xs">
-              提现功能在阶段 8 开放(管理员人工审批)
-            </p>
+            <WithdrawDialog balance={availableBalance} />
           </CardContent>
         </Card>
         <Card>
@@ -75,6 +110,39 @@ export default async function ElectricianWalletPage() {
           </CardHeader>
         </Card>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">提现记录</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {withdrawals.length === 0 ? (
+            <p className="text-muted-foreground py-6 text-center text-sm">
+              还没有提现记录
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {withdrawals.map((w) => (
+                <li
+                  key={w.id}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+                >
+                  <div>
+                    <p className="font-medium">¥{Number(w.amount).toFixed(2)}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {timeAgo(w.createdAt)}
+                      {w.adminNote ? ` · ${w.adminNote}` : ""}
+                    </p>
+                  </div>
+                  <Badge variant={WITHDRAWAL_VARIANT[w.status]}>
+                    {WITHDRAWAL_LABEL[w.status]}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
