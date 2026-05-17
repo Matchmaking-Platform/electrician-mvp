@@ -1,5 +1,6 @@
 import { apiError, apiOk } from "@/lib/api"
 import { getSession } from "@/lib/auth"
+import { notifyCompletionAwaiting } from "@/lib/notifications"
 import { canElectricianComplete } from "@/lib/order-state"
 import { prisma } from "@/lib/prisma"
 import { saveImage } from "@/lib/uploads"
@@ -67,12 +68,25 @@ export async function POST(
       completionPhotos: urls,
       completedAt: new Date(),
     },
-    select: { id: true, status: true, completionPhotos: true },
+    select: {
+      id: true,
+      title: true,
+      customerId: true,
+      status: true,
+      completionPhotos: true,
+    },
+  })
+
+  await notifyCompletionAwaiting({
+    customerId: updated.customerId,
+    orderId: id,
+    orderTitle: updated.title,
   })
 
   return apiOk({
     order: {
-      ...updated,
+      id: updated.id,
+      status: updated.status,
       completionPhotos: updated.completionPhotos as string[],
     },
   })

@@ -1,5 +1,6 @@
 import { apiError, apiOk } from "@/lib/api"
 import { getSession } from "@/lib/auth"
+import { notifyPaymentReceived } from "@/lib/notifications"
 import { canPay } from "@/lib/order-state"
 import { prisma } from "@/lib/prisma"
 import { paymentInputSchema } from "@/lib/validators/payment"
@@ -73,13 +74,29 @@ export async function POST(
       paymentStatus: "HELD",
       stripePaymentIntentId: `mock_${Date.now()}`,
     },
-    select: { id: true, paymentStatus: true, finalPrice: true },
+    select: {
+      id: true,
+      title: true,
+      paymentStatus: true,
+      finalPrice: true,
+      electricianId: true,
+    },
   })
+
+  if (updated.electricianId) {
+    await notifyPaymentReceived({
+      electricianId: updated.electricianId,
+      orderId: id,
+      orderTitle: updated.title,
+      amount,
+    })
+  }
 
   return apiOk({
     mode: "mock",
     order: {
-      ...updated,
+      id: updated.id,
+      paymentStatus: updated.paymentStatus,
       finalPrice: updated.finalPrice ? Number(updated.finalPrice) : null,
     },
   })

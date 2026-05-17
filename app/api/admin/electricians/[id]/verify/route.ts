@@ -3,6 +3,10 @@ import { VerificationStatus } from "@prisma/client"
 import { apiError, apiOk } from "@/lib/api"
 import { logAdminAction } from "@/lib/audit-log"
 import { getSession } from "@/lib/auth"
+import {
+  notifyElectricianRejected,
+  notifyElectricianVerified,
+} from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
 import { verifyActionSchema } from "@/lib/validators/electrician"
 
@@ -49,6 +53,7 @@ export async function POST(
       targetId: id,
       detail: { previousStatus: profile.verificationStatus },
     })
+    await notifyElectricianVerified({ userId: profile.userId })
     return apiOk({ status: "APPROVED" })
   }
 
@@ -69,6 +74,10 @@ export async function POST(
       reason: parsed.data.reason,
       previousStatus: profile.verificationStatus,
     },
+  })
+  await notifyElectricianRejected({
+    userId: profile.userId,
+    reason: parsed.data.reason,
   })
   return apiOk({ status: "REJECTED" })
 }

@@ -1,5 +1,6 @@
 import { apiError, apiOk } from "@/lib/api"
 import { getSession } from "@/lib/auth"
+import { notifyReviewReceived } from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
 import { recomputeElectricianRating } from "@/lib/ratings"
 import { saveImage } from "@/lib/uploads"
@@ -103,6 +104,12 @@ export async function POST(
     })
     await recomputeElectricianRating(tx, electricianId)
     return r
+  })
+
+  await notifyReviewReceived({
+    electricianId,
+    orderId: id,
+    rating: parsed.data.rating,
   })
 
   return apiOk({ review: created }, 201)

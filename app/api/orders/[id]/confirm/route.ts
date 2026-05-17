@@ -1,5 +1,6 @@
 import { apiError, apiOk } from "@/lib/api"
 import { getSession } from "@/lib/auth"
+import { notifyOrderCompleted } from "@/lib/notifications"
 import { canCustomerConfirm, computePayout } from "@/lib/order-state"
 import { prisma } from "@/lib/prisma"
 
@@ -26,6 +27,7 @@ export async function POST(
     where: { id },
     select: {
       id: true,
+      title: true,
       customerId: true,
       electricianId: true,
       status: true,
@@ -76,6 +78,13 @@ export async function POST(
       },
     }),
   ])
+
+  await notifyOrderCompleted({
+    electricianId: order.electricianId,
+    orderId: id,
+    orderTitle: order.title,
+    payout: electricianPayout,
+  })
 
   return apiOk({
     order: {

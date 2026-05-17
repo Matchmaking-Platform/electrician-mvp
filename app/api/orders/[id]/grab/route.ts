@@ -2,6 +2,7 @@ import { OrderStatus, VerificationStatus } from "@prisma/client"
 
 import { apiError, apiOk } from "@/lib/api"
 import { getSession } from "@/lib/auth"
+import { notifyOrderAccepted } from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
 
 /**
@@ -48,6 +49,20 @@ export async function POST(
     })
     if (!exists) return apiError("NOT_FOUND", "订单不存在", 404)
     return apiError("CONFLICT", "订单已被其他师傅抢走或已取消", 409)
+  }
+
+  // 通知顾客
+  const taken = await prisma.order.findUnique({
+    where: { id },
+    select: { customerId: true, title: true },
+  })
+  if (taken) {
+    await notifyOrderAccepted({
+      customerId: taken.customerId,
+      orderId: id,
+      orderTitle: taken.title,
+      electricianName: session.user.name,
+    })
   }
 
   return apiOk({ ok: true, orderId: id })

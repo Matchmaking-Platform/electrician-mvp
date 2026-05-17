@@ -1,6 +1,10 @@
 import { apiError, apiOk } from "@/lib/api"
 import { logAdminAction } from "@/lib/audit-log"
 import { getSession } from "@/lib/auth"
+import {
+  notifyWithdrawalPaid,
+  notifyWithdrawalRejected,
+} from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
 import { withdrawalDecisionSchema } from "@/lib/validators/withdrawal"
 
@@ -55,6 +59,10 @@ export async function POST(
         electricianId: req0.electricianId,
       },
     })
+    await notifyWithdrawalPaid({
+      electricianId: req0.electricianId,
+      amount: Number(req0.amount),
+    })
     return apiOk({ status: "PAID" })
   }
 
@@ -82,6 +90,11 @@ export async function POST(
       reason: parsed.data.adminNote,
       restoredAmount: Number(req0.amount),
     },
+  })
+  await notifyWithdrawalRejected({
+    electricianId: req0.electricianId,
+    amount: Number(req0.amount),
+    reason: parsed.data.adminNote,
   })
   return apiOk({ status: "REJECTED" })
 }
