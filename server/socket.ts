@@ -24,7 +24,9 @@ import type {
   SocketAuthData,
 } from "../lib/socket-events"
 
-const PORT = Number(process.env.SOCKET_PORT ?? 3001)
+// Railway / Render / Fly 等平台动态分配 PORT;
+// 本地 dev 用 SOCKET_PORT (避免和 Next.js 的 3000 冲突)
+const PORT = Number(process.env.PORT ?? process.env.SOCKET_PORT ?? 3001)
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET
 const CLIENT_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
