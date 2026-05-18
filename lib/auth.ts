@@ -43,17 +43,35 @@ export async function verifyCredentials(
   }
 }
 
+const isProd = process.env.NODE_ENV === "production"
+
 /**
  * NextAuth 配置。
  * - 策略:JWT(Credentials Provider 不能用 database session)
  * - Session 中携带 id 和 role,供路由保护和 UI 判断使用
+ * - 生产环境(HTTPS)显式把 session cookie 设为 SameSite=None + Secure,
+ *   这样浏览器才会把 cookie 发到独立部署的 socket 域名(跨站请求需要)。
  */
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
+  useSecureCookies: isProd,
   pages: {
     signIn: "/login",
     error: "/login",
   },
+  cookies: isProd
+    ? {
+        sessionToken: {
+          name: "__Secure-next-auth.session-token",
+          options: {
+            httpOnly: true,
+            sameSite: "none",
+            path: "/",
+            secure: true,
+          },
+        },
+      }
+    : undefined,
   providers: [
     Credentials({
       name: "Credentials",
